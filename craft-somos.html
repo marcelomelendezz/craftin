@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SOMOS · Crafteo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#1a1a2e;user-select:none;}
+
+/* PIXEL FONT */
+:root{
+  --px:'VT323',monospace;
+  --bg:#1d1f21;
+  --bg2:#2a2d30;
+  --border:#555;
+  --border2:#888;
+  --gold:#ffd700;
+  --green:#55ff55;
+  --red:#ff5555;
+}
+
+#app{display:flex;flex-direction:column;width:100%;height:100%;
+  background:linear-gradient(180deg,#1a1a2e 0%,#16213e 100%);
+  image-rendering:pixelated;}
+
+/* ── TOP BAR ── */
+#topbar{
+  flex-shrink:0;display:flex;align-items:center;gap:6px;
+  padding:5px 8px;
+  background:#2d2d2d;
+  border-bottom:3px solid #555;
+  box-shadow:0 3px 0 #111;
+}
+#topbar h1{font-family:'Press Start 2P',monospace;font-size:clamp(7px,2vw,10px);
+  color:#55ff55;text-shadow:2px 2px #003300;letter-spacing:1px;}
+#score-box{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.score-item{font-family:var(--px);font-size:clamp(13px,3.5vw,18px);color:#ffd700;
+  display:flex;align-items:center;gap:3px;}
+
+/* ── MAIN LAYOUT ── */
+#main{flex:1;min-height:0;display:flex;flex-direction:row;overflow:hidden;}
+
+/* ── LEFT: INVENTORY ── */
+#inventory-panel{
+  flex-shrink:0;width:clamp(130px,35vw,190px);
+  background:#2d2d2d;border-right:3px solid #555;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.panel-title{
+  font-family:'Press Start 2P',monospace;font-size:clamp(5px,1.5vw,7px);
+  color:#aaa;padding:6px 8px;background:#222;border-bottom:2px solid #444;
+  letter-spacing:1px;
+}
+#inv-tabs{display:flex;border-bottom:2px solid #444;}
+.inv-tab{
+  flex:1;padding:4px;font-family:var(--px);font-size:clamp(11px,3vw,14px);
+  text-align:center;cursor:pointer;background:#333;color:#888;
+  border-right:2px solid #444;transition:all 0.1s;
+}
+.inv-tab:last-child{border-right:none;}
+.inv-tab.active{background:#4a4a4a;color:#fff;}
+.inv-tab:active{transform:scale(0.95);}
+
+#inventory-grid{
+  flex:1;overflow-y:auto;padding:5px;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:3px;
+  align-content:start;
+}
+#inventory-grid::-webkit-scrollbar{width:4px;}
+#inventory-grid::-webkit-scrollbar-thumb{background:#555;}
+
+.inv-slot{
+  aspect-ratio:1;border-radius:2px;cursor:pointer;
+  background:#3a3a3a;border:2px solid #555;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;transition:all 0.08s;
+  font-size:clamp(16px,4.5vw,22px);
+}
+.inv-slot:hover{border-color:#aaa;background:#484848;}
+.inv-slot:active{transform:scale(0.93);}
+.inv-slot.selected{border-color:#ffd700;background:#4a4500;
+  box-shadow:0 0 0 1px #ffd700;}
+.inv-slot .qty{
+  position:absolute;bottom:1px;right:3px;
+  font-family:var(--px);font-size:clamp(9px,2.5vw,13px);
+  color:#fff;text-shadow:1px 1px #000,0 0 4px #000;
+  line-height:1;
+}
+.inv-slot .iname{
+  font-family:var(--px);font-size:clamp(6px,1.5vw,8px);
+  color:#aaa;text-align:center;line-height:1;
+  position:absolute;bottom:-1px;left:0;right:0;
+  background:rgba(0,0,0,0.7);padding:1px;display:none;
+}
+.inv-slot:hover .iname{display:block;}
+
+/* ── CENTER: CRAFTING TABLE ── */
+#craft-panel{
+  flex:1;min-width:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;
+  padding:8px 4px;gap:6px;overflow-y:auto;
+}
+#craft-panel::-webkit-scrollbar{width:3px;}
+
+/* Crafting grid */
+#craft-area{
+  background:#2d2d2d;border:3px solid #555;border-radius:4px;
+  padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px;
+  width:100%;max-width:300px;
+  box-shadow:3px 3px 0 #111,inset 0 0 0 1px #444;
+}
+#craft-title{font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.8vw,8px);
+  color:#888;letter-spacing:1px;}
+
+#craft-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:3px;width:100%;max-width:160px;
+}
+.craft-slot{
+  aspect-ratio:1;border-radius:2px;cursor:pointer;
+  background:#1a1a1a;border:2px solid #444;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(18px,5vw,26px);
+  position:relative;transition:all 0.08s;
+  min-height:40px;
+}
+.craft-slot:hover{border-color:#888;}
+.craft-slot:active{transform:scale(0.92);}
+.craft-slot.filled{background:#2a2a1a;border-color:#666;}
+.craft-slot .rm{
+  position:absolute;top:-1px;right:-1px;
+  width:14px;height:14px;background:#880000;border-radius:50%;
+  font-size:9px;color:#fff;display:none;
+  align-items:center;justify-content:center;
+  line-height:1;font-weight:bold;border:1px solid #ff4444;
+}
+.craft-slot.filled:hover .rm{display:flex;}
+
+/* Arrow + result */
+#craft-row{display:flex;align-items:center;gap:10px;width:100%;justify-content:center;}
+#craft-arrow{font-size:clamp(18px,5vw,24px);color:#888;}
+#result-slot{
+  width:clamp(52px,14vw,68px);height:clamp(52px,14vw,68px);
+  border-radius:3px;background:#1a1a1a;border:3px solid #444;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:clamp(22px,6vw,30px);position:relative;
+  cursor:pointer;transition:all 0.1s;
+}
+#result-slot.has-result{
+  border-color:#ffd700;background:#2a2500;
+  animation:pulse 1s ease infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 #ffd70066;}50%{box-shadow:0 0 0 5px #ffd70000;}}
+#result-slot .result-qty{
+  position:absolute;bottom:1px;right:3px;
+  font-family:var(--px);font-size:clamp(10px,2.8vw,14px);
+  color:#fff;text-shadow:1px 1px #000;
+}
+#result-name{
+  font-family:var(--px);font-size:clamp(11px,3vw,15px);
+  color:#ffd700;text-align:center;min-height:20px;
+}
+#craft-btn{
+  padding:8px 16px;border-radius:3px;cursor:pointer;
+  font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.8vw,8px);
+  background:linear-gradient(180deg,#5a8a2a,#3a6a0a);
+  border:2px solid #88cc44;color:#ddff88;
+  box-shadow:0 3px 0 #1a4a00;letter-spacing:1px;
+  transition:all 0.1s;
+}
+#craft-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #1a4a00;}
+#craft-btn:disabled{background:#444;border-color:#555;color:#777;cursor:default;
+  box-shadow:0 3px 0 #222;}
+
+/* Hint */
+#craft-hint{
+  font-family:var(--px);font-size:clamp(10px,2.8vw,14px);
+  color:#666;text-align:center;min-height:20px;line-height:1.3;
+}
+
+/* ── RIGHT: RECIPES + CRAFTED ── */
+#recipes-panel{
+  flex-shrink:0;width:clamp(120px,32vw,180px);
+  background:#2d2d2d;border-left:3px solid #555;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#recipes-list{flex:1;overflow-y:auto;padding:4px;display:flex;flex-direction:column;gap:3px;}
+#recipes-list::-webkit-scrollbar{width:3px;}
+#recipes-list::-webkit-scrollbar-thumb{background:#555;}
+
+.recipe-item{
+  padding:5px 6px;border-radius:2px;cursor:pointer;
+  background:#333;border:2px solid #444;
+  display:flex;align-items:center;gap:5px;
+  transition:all 0.08s;
+}
+.recipe-item:hover{background:#3d3d3d;border-color:#666;}
+.recipe-item:active{transform:scale(0.97);}
+.recipe-item.discovered{border-color:#4a4a00;}
+.recipe-item.locked{opacity:0.4;cursor:default;}
+.recipe-item .ri-icon{font-size:clamp(14px,4vw,18px);}
+.recipe-item .ri-info{flex:1;min-width:0;}
+.recipe-item .ri-name{font-family:var(--px);font-size:clamp(9px,2.5vw,12px);
+  color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.recipe-item .ri-mats{font-family:var(--px);font-size:clamp(8px,2vw,10px);color:#888;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.recipe-item.discovered .ri-name{color:var(--gold);}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#2d2d2d;border:2px solid var(--green);
+  color:var(--green);font-family:var(--px);font-size:clamp(12px,3.5vw,16px);
+  padding:8px 16px;border-radius:3px;
+  box-shadow:3px 3px 0 #111;
+  pointer-events:none;opacity:0;transition:opacity 0.2s;
+  z-index:100;text-align:center;
+}
+#toast.show{opacity:1;}
+
+/* ── SELECTED INDICATOR ── */
+#selected-bar{
+  flex-shrink:0;padding:3px 8px;background:#222;border-top:2px solid #444;
+  font-family:var(--px);font-size:clamp(10px,2.8vw,14px);color:#aaa;
+  min-height:24px;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <h1>⛏ CRAFTEO</h1>
+    <div id="score-box">
+      <div class="score-item">🧱 <span id="items-crafted">0</span></div>
+      <div class="score-item">⭐ <span id="discovered-count">0</span>/60</div>
+    </div>
+  </div>
+
+  <div id="main">
+    <!-- INVENTORY -->
+    <div id="inventory-panel">
+      <div class="panel-title">INVENTARIO</div>
+      <div id="inv-tabs">
+        <div class="inv-tab active" data-tab="natural">🌿</div>
+        <div class="inv-tab" data-tab="mineral">⛏</div>
+        <div class="inv-tab" data-tab="special">✨</div>
+        <div class="inv-tab" data-tab="crafted">🔨</div>
+      </div>
+      <div id="inventory-grid"></div>
+      <div id="selected-bar">← toca un material</div>
+    </div>
+
+    <!-- CRAFT TABLE -->
+    <div id="craft-panel">
+      <div id="craft-area">
+        <div id="craft-title">MESA DE CRAFTEO</div>
+        <div id="craft-grid"></div>
+        <div id="craft-row">
+          <div id="craft-arrow">➜</div>
+          <div id="result-slot"><span id="result-icon"></span><span class="result-qty" id="result-qty"></span></div>
+        </div>
+        <div id="result-name">?</div>
+        <button id="craft-btn" disabled>CRAFTEAR</button>
+      </div>
+      <div id="craft-hint">Selecciona materiales del inventario<br>y colócalos en la cuadrícula</div>
+    </div>
+
+    <!-- RECIPES -->
+    <div id="recipes-panel">
+      <div class="panel-title">RECETAS</div>
+      <div id="recipes-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// MATERIALS DATABASE
+// ══════════════════════════════════════════════════════════
+const MATERIALS = {
+  // Natural
+  madera:    {icon:'🪵', name:'Madera',      tab:'natural',  qty:64, desc:'Tronco de árbol'},
+  piedra:    {icon:'🪨', name:'Piedra',       tab:'natural',  qty:64, desc:'Bloque de roca'},
+  tierra:    {icon:'🟫', name:'Tierra',       tab:'natural',  qty:64, desc:'Suelo fértil'},
+  arena:     {icon:'🏜️', name:'Arena',        tab:'natural',  qty:32, desc:'Granos de arena'},
+  carbon:    {icon:'🖤', name:'Carbón',       tab:'natural',  qty:32, desc:'Combustible básico'},
+  hoja:      {icon:'🍃', name:'Hoja',         tab:'natural',  qty:32, desc:'Follaje de árbol'},
+  fibra:     {icon:'🌿', name:'Fibra',        tab:'natural',  qty:32, desc:'Fibra vegetal'},
+  hueso:     {icon:'🦴', name:'Hueso',        tab:'natural',  qty:16, desc:'Hueso de criatura'},
+  pluma:     {icon:'🪶', name:'Pluma',        tab:'natural',  qty:16, desc:'Pluma de ave'},
+  hongo:     {icon:'🍄', name:'Hongo',        tab:'natural',  qty:16, desc:'Hongo del bosque'},
+  baya:      {icon:'🫐', name:'Baya',         tab:'natural',  qty:16, desc:'Fruto silvestre'},
+  cera:      {icon:'🕯️', name:'Cera',         tab:'natural',  qty:8,  desc:'Cera de abeja'},
+  // Mineral
+  hierro:    {icon:'🔩', name:'Hierro',       tab:'mineral',  qty:32, desc:'Mineral de hierro'},
+  oro:       {icon:'🟡', name:'Oro',          tab:'mineral',  qty:16, desc:'Mineral precioso'},
+  diamante:  {icon:'💎', name:'Diamante',     tab:'mineral',  qty:4,  desc:'Gema rara'},
+  esmeralda: {icon:'💚', name:'Esmeralda',    tab:'mineral',  qty:4,  desc:'Piedra verde'},
+  obsidiana: {icon:'🟣', name:'Obsidiana',    tab:'mineral',  qty:8,  desc:'Vidrio volcánico'},
+  cuarzo:    {icon:'🔷', name:'Cuarzo',       tab:'mineral',  qty:16, desc:'Cristal blanco'},
+  cobre:     {icon:'🟠', name:'Cobre',        tab:'mineral',  qty:24, desc:'Metal rojizo'},
+  grava:     {icon:'⬛', name:'Grava',        tab:'mineral',  qty:32, desc:'Piedra triturada'},
+  vidrio:    {icon:'🫧', name:'Vidrio',       tab:'mineral',  qty:0,  desc:'Se craftea con arena'},
+  lingote_hierro:{icon:'⬜',name:'Lingote',   tab:'mineral',  qty:0,  desc:'Se craftea'},
+  // Special
+  polvo_hueso:{icon:'⚪',name:'Polvo Hueso',  tab:'special',  qty:0,  desc:'Fertilizante'},
+  tinte_rojo:{icon:'🔴', name:'Tinte Rojo',   tab:'special',  qty:0,  desc:'Colorante'},
+  tinte_azul:{icon:'🔵', name:'Tinte Azul',   tab:'special',  qty:0,  desc:'Colorante'},
+  seda:      {icon:'🕸️', name:'Seda',         tab:'special',  qty:8,  desc:'Hilo de araña'},
+  slime:     {icon:'🟢', name:'Slime',        tab:'special',  qty:4,  desc:'Baba pegajosa'},
+  lava:      {icon:'🌋', name:'Lava',         tab:'special',  qty:4,  desc:'Roca fundida'},
+  perla:     {icon:'🔮', name:'Perla',        tab:'special',  qty:2,  desc:'Perla de nácar'},
+  lazo:      {icon:'➰', name:'Lazo',         tab:'special',  qty:0,  desc:'Se craftea'},
+  papel:     {icon:'📄', name:'Papel',        tab:'special',  qty:0,  desc:'Se craftea'},
+};
+
+// ══════════════════════════════════════════════════════════
+// RECIPES — pattern is 3x3 grid (null = empty)
+// Keys are material IDs, result is {id, qty}
+// ══════════════════════════════════════════════════════════
+const RECIPES = [
+  // ── HERRAMIENTAS ──
+  {name:'Pico de Madera',   icon:'⛏️', category:'Herramienta',
+   pattern:['madera','madera','madera', null,'madera',null, null,'madera',null],
+   result:{icon:'⛏️',name:'Pico de Madera',qty:1},
+   hint:'Madera arriba + 2 palos'},
+  {name:'Hacha de Madera',  icon:'🪓', category:'Herramienta',
+   pattern:['madera','madera',null, 'madera','madera',null, null,'madera',null],
+   result:{icon:'🪓',name:'Hacha de Madera',qty:1}},
+  {name:'Pala de Madera',   icon:'🔨', category:'Herramienta',
+   pattern:[null,'madera',null, null,'madera',null, null,'madera',null],
+   result:{icon:'🔨',name:'Pala de Madera',qty:1}},
+  {name:'Pico de Piedra',   icon:'⛏️', category:'Herramienta',
+   pattern:['piedra','piedra','piedra', null,'madera',null, null,'madera',null],
+   result:{icon:'⛏️',name:'Pico de Piedra',qty:1}},
+  {name:'Pico de Hierro',   icon:'⛏️', category:'Herramienta',
+   pattern:['hierro','hierro','hierro', null,'madera',null, null,'madera',null],
+   result:{icon:'⚒️',name:'Pico de Hierro',qty:1}},
+  {name:'Pico de Diamante', icon:'💎', category:'Herramienta',
+   pattern:['diamante','diamante','diamante', null,'madera',null, null,'madera',null],
+   result:{icon:'💠',name:'Pico de Diamante',qty:1}},
+  {name:'Espada de Madera', icon:'🗡️', category:'Arma',
+   pattern:[null,'madera',null, null,'madera',null, null,'madera',null],
+   result:{icon:'🗡️',name:'Espada de Madera',qty:1}},
+  {name:'Espada de Hierro', icon:'⚔️', category:'Arma',
+   pattern:[null,'hierro',null, null,'hierro',null, null,'madera',null],
+   result:{icon:'⚔️',name:'Espada de Hierro',qty:1}},
+  {name:'Arco',             icon:'🏹', category:'Arma',
+   pattern:[null,'madera','seda', 'madera',null,'seda', null,'madera','seda'],
+   result:{icon:'🏹',name:'Arco',qty:1}},
+  {name:'Flecha',           icon:'➶',  category:'Arma',
+   pattern:[null,'piedra',null, null,'madera',null, null,'pluma',null],
+   result:{icon:'🏹',name:'Flechas',qty:4}},
+  // ── BLOQUES / CONSTRUCCIÓN ──
+  {name:'Tabla de Madera',  icon:'📋', category:'Bloque',
+   pattern:[null,null,null, null,'madera',null, null,null,null],
+   result:{icon:'📋',name:'Tablas',qty:4}},
+  {name:'Palitos',          icon:'🥢', category:'Material',
+   pattern:[null,'madera',null, null,'madera',null, null,null,null],
+   result:{icon:'🥢',name:'Palos',qty:4}},
+  {name:'Vidrio',           icon:'🫧', category:'Bloque',
+   pattern:['arena','arena','arena', 'arena','arena','arena', 'arena','arena','arena'],
+   result:{icon:'🫧',name:'Vidrio',qty:8}},
+  {name:'Bloque de Piedra', icon:'🧱', category:'Bloque',
+   pattern:['piedra','piedra',null, 'piedra','piedra',null, null,null,null],
+   result:{icon:'🧱',name:'Bloque de Piedra',qty:4}},
+  {name:'Lingote de Hierro',icon:'⬜', category:'Material',
+   pattern:[null,null,null, null,'hierro',null, null,'carbon',null],
+   result:{icon:'⬜',name:'Lingote',qty:1}},
+  {name:'Ladrillo',         icon:'🟥', category:'Bloque',
+   pattern:['piedra','piedra',null, 'piedra','piedra',null, null,null,null],
+   result:{icon:'🟥',name:'Ladrillos',qty:4}},
+  {name:'Obsidiana Pulida', icon:'🟣', category:'Bloque',
+   pattern:['obsidiana','obsidiana',null, 'obsidiana','obsidiana',null, null,null,null],
+   result:{icon:'🔲',name:'Obsidiana Pulida',qty:4}},
+  // ── MUEBLES / OBJETOS ──
+  {name:'Mesa de Crafteo',  icon:'🪵', category:'Mueble',
+   pattern:['madera','madera',null, 'madera','madera',null, null,null,null],
+   result:{icon:'🔨',name:'Mesa de Crafteo',qty:1}},
+  {name:'Cofre',            icon:'📦', category:'Mueble',
+   pattern:['madera','madera','madera', 'madera',null,'madera', 'madera','madera','madera'],
+   result:{icon:'📦',name:'Cofre',qty:1}},
+  {name:'Horno',            icon:'🔥', category:'Mueble',
+   pattern:['piedra','piedra','piedra', 'piedra',null,'piedra', 'piedra','piedra','piedra'],
+   result:{icon:'🔥',name:'Horno',qty:1}},
+  {name:'Cama',             icon:'🛏️', category:'Mueble',
+   pattern:['hoja','hoja','hoja', 'madera','madera','madera', null,null,null],
+   result:{icon:'🛏️',name:'Cama',qty:1}},
+  {name:'Puerta',           icon:'🚪', category:'Mueble',
+   pattern:['madera','madera',null, 'madera','madera',null, 'madera','madera',null],
+   result:{icon:'🚪',name:'Puerta',qty:3}},
+  {name:'Escala',           icon:'🪜', category:'Mueble',
+   pattern:['madera',null,'madera', 'madera','madera','madera', 'madera',null,'madera'],
+   result:{icon:'🪜',name:'Escalera',qty:3}},
+  {name:'Antorcha',         icon:'🕯️', category:'Luz',
+   pattern:[null,null,null, null,'carbon',null, null,'madera',null],
+   result:{icon:'🕯️',name:'Antorcha',qty:4}},
+  {name:'Linterna',         icon:'🏮', category:'Luz',
+   pattern:[null,'hierro',null, 'hierro','carbon','hierro', null,'hierro',null],
+   result:{icon:'🏮',name:'Linterna',qty:1}},
+  {name:'Farol',            icon:'🔦', category:'Luz',
+   pattern:[null,'vidrio',null, 'vidrio','oro','vidrio', null,'vidrio',null],
+   result:{icon:'🔦',name:'Farol de Oro',qty:1}},
+  // ── ROPA / ARMADURA ──
+  {name:'Casco de Hierro',  icon:'⛑️', category:'Armadura',
+   pattern:['hierro','hierro','hierro', 'hierro',null,'hierro', null,null,null],
+   result:{icon:'⛑️',name:'Casco de Hierro',qty:1}},
+  {name:'Pechera de Hierro',icon:'🦺', category:'Armadura',
+   pattern:['hierro',null,'hierro', 'hierro','hierro','hierro', 'hierro','hierro','hierro'],
+   result:{icon:'🦺',name:'Pechera de Hierro',qty:1}},
+  {name:'Casco de Oro',     icon:'👑', category:'Armadura',
+   pattern:['oro','oro','oro', 'oro',null,'oro', null,null,null],
+   result:{icon:'👑',name:'Corona de Oro',qty:1}},
+  // ── COMIDA / POCIONES ──
+  {name:'Pan',              icon:'🍞', category:'Comida',
+   pattern:[null,null,null, 'baya','baya','baya', null,null,null],
+   result:{icon:'🍞',name:'Pan',qty:1}},
+  {name:'Pastel',           icon:'🎂', category:'Comida',
+   pattern:['baya','baya','baya', 'cera','cera','cera', 'hongo','hongo','hongo'],
+   result:{icon:'🎂',name:'Pastel',qty:1}},
+  {name:'Poción de Vida',   icon:'🧪', category:'Poción',
+   pattern:[null,null,null, null,'baya',null, null,'hongo',null],
+   result:{icon:'🧪',name:'Poción de Vida',qty:1}},
+  {name:'Poción de Fuerza', icon:'💪', category:'Poción',
+   pattern:[null,null,null, 'slime','baya','slime', null,'hongo',null],
+   result:{icon:'💪',name:'Poción de Fuerza',qty:1}},
+  // ── ESPECIALES ──
+  {name:'Papel',            icon:'📄', category:'Material',
+   pattern:[null,null,null, 'fibra','fibra','fibra', null,null,null],
+   result:{icon:'📄',name:'Papel',qty:3}},
+  {name:'Libro',            icon:'📚', category:'Objeto',
+   pattern:[null,null,null, 'papel','papel','papel', null,'seda',null],
+   result:{icon:'📚',name:'Libro',qty:1}},
+  {name:'Mapa',             icon:'🗺️', category:'Objeto',
+   pattern:['papel','papel','papel', 'papel','cuarzo','papel', 'papel','papel','papel'],
+   result:{icon:'🗺️',name:'Mapa',qty:1}},
+  {name:'Brújula',          icon:'🧭', category:'Objeto',
+   pattern:[null,'hierro',null, 'hierro','cuarzo','hierro', null,'hierro',null],
+   result:{icon:'🧭',name:'Brújula',qty:1}},
+  {name:'Reloj',            icon:'⌚', category:'Objeto',
+   pattern:[null,'oro',null, 'oro','cuarzo','oro', null,'oro',null],
+   result:{icon:'⌚',name:'Reloj de Sol',qty:1}},
+  {name:'Dinamita',         icon:'🧨', category:'Objeto',
+   pattern:['carbon','carbon','carbon', 'carbon','carbon','carbon', 'carbon','carbon','carbon'],
+   result:{icon:'🧨',name:'Dinamita',qty:1}},
+  {name:'Bote',             icon:'⛵', category:'Transporte',
+   pattern:['madera','madera','madera', 'madera',null,'madera', null,null,null],
+   result:{icon:'⛵',name:'Bote',qty:1}},
+  {name:'Minecart',         icon:'🛒', category:'Transporte',
+   pattern:['hierro',null,'hierro', 'hierro','hierro','hierro', null,null,null],
+   result:{icon:'🛒',name:'Carrito de Mina',qty:1}},
+  {name:'Portal',           icon:'🌀', category:'Especial',
+   pattern:['obsidiana','obsidiana','obsidiana', 'obsidiana',null,'obsidiana', 'obsidiana','obsidiana','obsidiana'],
+   result:{icon:'🌀',name:'Marco de Portal',qty:1}},
+  {name:'Baliza',           icon:'📡', category:'Especial',
+   pattern:['vidrio','vidrio','vidrio', 'vidrio','diamante','vidrio', 'obsidiana','obsidiana','obsidiana'],
+   result:{icon:'📡',name:'Baliza Mágica',qty:1}},
+  {name:'Tridente',         icon:'🔱', category:'Arma',
+   pattern:['perla',null,'perla', null,'perla',null, null,'diamante',null],
+   result:{icon:'🔱',name:'Tridente',qty:1}},
+  {name:'Corona',           icon:'👑', category:'Especial',
+   pattern:['oro',null,'oro', null,'diamante',null, 'esmeralda','oro','esmeralda'],
+   result:{icon:'👑',name:'Corona Real',qty:1}},
+  // Extra fun recipes
+  {name:'Columpio',         icon:'🪁', category:'Mueble',
+   pattern:['madera',null,'madera', 'seda',null,'seda', null,'madera',null],
+   result:{icon:'🪁',name:'Columpio',qty:1}},
+  {name:'Llave',            icon:'🗝️', category:'Objeto',
+   pattern:[null,'oro',null, null,'oro',null, null,null,'oro'],
+   result:{icon:'🗝️',name:'Llave Maestra',qty:1}},
+  {name:'Telescopio',       icon:'🔭', category:'Objeto',
+   pattern:[null,'vidrio','hierro', null,'vidrio',null, 'hierro',null,null],
+   result:{icon:'🔭',name:'Telescopio',qty:1}},
+  {name:'Trofeo',           icon:'🏆', category:'Especial',
+   pattern:[null,'oro',null, 'oro','diamante','oro', null,'piedra',null],
+   result:{icon:'🏆',name:'Trofeo de Campeón',qty:1}},
+  {name:'Poción Oscura',    icon:'🧛', category:'Poción',
+   pattern:[null,null,null, 'obsidiana','lava','obsidiana', null,'slime',null],
+   result:{icon:'🧛',name:'Poción Oscura',qty:1}},
+  {name:'Cristal Mágico',   icon:'🔮', category:'Especial',
+   pattern:['cuarzo',null,'cuarzo', null,'diamante',null, 'cuarzo',null,'cuarzo'],
+   result:{icon:'🔮',name:'Cristal Mágico',qty:1}},
+  {name:'Escudo',           icon:'🛡️', category:'Armadura',
+   pattern:['madera','hierro','madera', 'madera','madera','madera', null,'madera',null],
+   result:{icon:'🛡️',name:'Escudo',qty:1}},
+  {name:'Campana',          icon:'🔔', category:'Objeto',
+   pattern:[null,'oro',null, 'oro','oro','oro', null,'oro',null],
+   result:{icon:'🔔',name:'Campana de Aldea',qty:1}},
+  {name:'Pergamino',        icon:'📜', category:'Objeto',
+   pattern:['papel',null,null, 'papel',null,null, 'papel',null,null],
+   result:{icon:'📜',name:'Pergamino',qty:1}},
+  {name:'Tambor',           icon:'🥁', category:'Mueble',
+   pattern:['madera','seda','madera', 'madera',null,'madera', 'madera','madera','madera'],
+   result:{icon:'🥁',name:'Tambor',qty:1}},
+];
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let inventory = {};
+let craftGrid = Array(9).fill(null); // 3x3
+let selectedMat = null;
+let activeTab = 'natural';
+let discovered = new Set();
+let craftedTotal = 0;
+
+// Init inventory
+Object.entries(MATERIALS).forEach(([id,m])=>{
+  inventory[id] = m.qty;
+});
+
+// ══════════════════════════════════════════════════════════
+// INVENTORY UI
+// ══════════════════════════════════════════════════════════
+function buildInventory(){
+  const grid = document.getElementById('inventory-grid');
+  grid.innerHTML = '';
+  const mats = Object.entries(MATERIALS)
+    .filter(([id,m])=> m.tab === activeTab)
+    .sort((a,b)=> b[1].qty - a[1].qty || a[1].name.localeCompare(b[1].name));
+
+  mats.forEach(([id,m])=>{
+    if(inventory[id] === 0 && activeTab !== 'crafted') return; // hide empty non-crafted
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot' + (selectedMat===id?' selected':'');
+    slot.innerHTML = `<span>${m.icon}</span><span class="qty">${inventory[id]}</span><span class="iname">${m.name}</span>`;
+    if(inventory[id]===0) slot.style.opacity='0.35';
+    slot.addEventListener('click',()=> selectMaterial(id));
+    slot.addEventListener('touchstart',e=>{e.preventDefault();selectMaterial(id);},{passive:false});
+    grid.appendChild(slot);
+  });
+}
+
+function selectMaterial(id){
+  if(inventory[id] <= 0){ showToast(`No tienes ${MATERIALS[id].name}`,'#ff5555'); return; }
+  selectedMat = id;
+  buildInventory();
+  const m = MATERIALS[id];
+  document.getElementById('selected-bar').textContent = `${m.icon} ${m.name}: ${inventory[id]} uds`;
+}
+
+document.querySelectorAll('.inv-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.inv-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    activeTab = tab.dataset.tab;
+    buildInventory();
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+// CRAFT GRID UI
+// ══════════════════════════════════════════════════════════
+function buildCraftGrid(){
+  const grid = document.getElementById('craft-grid');
+  grid.innerHTML = '';
+  craftGrid.forEach((matId,i)=>{
+    const slot = document.createElement('div');
+    slot.className = 'craft-slot' + (matId?' filled':'');
+    if(matId){
+      const m = MATERIALS[matId];
+      slot.innerHTML = `<span>${m?m.icon:'?'}</span><span class="rm">×</span>`;
+      slot.querySelector('.rm').addEventListener('click',e=>{
+        e.stopPropagation();
+        removeCraftSlot(i);
+      });
+    }
+    slot.addEventListener('click',()=> placeMaterial(i));
+    slot.addEventListener('touchstart',e=>{e.preventDefault();
+      if(matId){ removeCraftSlot(i); } else { placeMaterial(i); }
+    },{passive:false});
+    grid.appendChild(slot);
+  });
+  checkRecipe();
+}
+
+function placeMaterial(idx){
+  if(!selectedMat){ showToast('Selecciona un material primero','#ffaa44'); return; }
+  if(inventory[selectedMat] <= 0){ showToast('Sin existencias','#ff5555'); return; }
+  craftGrid[idx] = selectedMat;
+  buildCraftGrid();
+}
+
+function removeCraftSlot(idx){
+  craftGrid[idx] = null;
+  buildCraftGrid();
+}
+
+// ══════════════════════════════════════════════════════════
+// RECIPE MATCHING
+// ══════════════════════════════════════════════════════════
+let currentRecipe = null;
+
+function checkRecipe(){
+  currentRecipe = null;
+  const resultSlot = document.getElementById('result-slot');
+  const resultIcon = document.getElementById('result-icon');
+  const resultQty  = document.getElementById('result-qty');
+  const resultName = document.getElementById('result-name');
+  const craftBtn   = document.getElementById('craft-btn');
+  const hintEl     = document.getElementById('craft-hint');
+
+  // Try to match any recipe
+  for(const recipe of RECIPES){
+    if(matchesRecipe(craftGrid, recipe.pattern)){
+      // Check if we have enough materials
+      const needed = countNeeded(recipe.pattern);
+      const canCraft = canMakeRecipe(needed);
+      currentRecipe = recipe;
+      resultSlot.className = 'result-slot has-result';
+      resultIcon.textContent = recipe.result.icon;
+      resultQty.textContent = recipe.result.qty > 1 ? '×'+recipe.result.qty : '';
+      resultName.textContent = recipe.result.name;
+      craftBtn.disabled = !canCraft;
+      hintEl.textContent = canCraft ? `¡Listo para craftear!` : `Faltan materiales`;
+      hintEl.style.color = canCraft ? '#55ff55' : '#ff5555';
+      return;
+    }
+  }
+
+  // No match
+  resultSlot.className = 'result-slot';
+  resultIcon.textContent = '';
+  resultQty.textContent = '';
+  resultName.textContent = '?';
+  craftBtn.disabled = true;
+
+  const filled = craftGrid.filter(Boolean).length;
+  if(filled > 0){
+    hintEl.textContent = 'No hay receta para esta combinación';
+    hintEl.style.color = '#888';
+  } else {
+    hintEl.textContent = 'Coloca materiales en la cuadrícula';
+    hintEl.style.color = '#666';
+  }
+}
+
+function matchesRecipe(grid, pattern){
+  // Exact match (position matters)
+  for(let i=0;i<9;i++){
+    const g = grid[i] || null;
+    const p = pattern[i] || null;
+    if(g !== p) return false;
+  }
+  return true;
+}
+
+function countNeeded(pattern){
+  const count = {};
+  pattern.forEach(m=>{ if(m){ count[m]=(count[m]||0)+1; } });
+  return count;
+}
+
+function canMakeRecipe(needed){
+  return Object.entries(needed).every(([id,qty])=> (inventory[id]||0) >= qty);
+}
+
+// ══════════════════════════════════════════════════════════
+// CRAFT ACTION
+// ══════════════════════════════════════════════════════════
+document.getElementById('craft-btn').addEventListener('click', doCraft);
+
+function doCraft(){
+  if(!currentRecipe) return;
+  const needed = countNeeded(currentRecipe.pattern);
+  if(!canMakeRecipe(needed)){ showToast('No tienes suficientes materiales','#ff5555'); return; }
+
+  // Consume materials
+  Object.entries(needed).forEach(([id,qty])=>{ inventory[id] -= qty; });
+
+  // Add result to crafted tab (special handling)
+  const resultId = currentRecipe.result.name.toLowerCase().replace(/\s+/g,'_');
+  // Just add as crafted item
+  if(!MATERIALS[resultId]){
+    MATERIALS[resultId] = {
+      icon:currentRecipe.result.icon,
+      name:currentRecipe.result.name,
+      tab:'crafted', qty:0, desc:'Objeto crafteado'
+    };
+    inventory[resultId] = 0;
+  }
+  inventory[resultId] = (inventory[resultId]||0) + currentRecipe.result.qty;
+
+  // Stats
+  craftedTotal++;
+  if(!discovered.has(currentRecipe.name)){
+    discovered.add(currentRecipe.name);
+    showToast(`✨ NUEVO: ${currentRecipe.result.icon} ${currentRecipe.result.name}!`,'#ffd700');
+    updateRecipesList();
+  } else {
+    showToast(`${currentRecipe.result.icon} ${currentRecipe.result.name} crafteado!`,'#55ff55');
+  }
+
+  document.getElementById('items-crafted').textContent = craftedTotal;
+  document.getElementById('discovered-count').textContent = discovered.size;
+
+  // Clear grid
+  craftGrid = Array(9).fill(null);
+  buildCraftGrid();
+  buildInventory();
+}
+
+// ══════════════════════════════════════════════════════════
+// RECIPES LIST
+// ══════════════════════════════════════════════════════════
+function buildRecipesList(){
+  const list = document.getElementById('recipes-list');
+  list.innerHTML = '';
+  RECIPES.forEach(r=>{
+    const div = document.createElement('div');
+    const isDisc = discovered.has(r.name);
+    div.className = 'recipe-item' + (isDisc?' discovered':'');
+    div.innerHTML = `
+      <span class="ri-icon">${r.result.icon}</span>
+      <div class="ri-info">
+        <div class="ri-name">${isDisc ? r.result.name : '???'}</div>
+        <div class="ri-mats">${isDisc ? r.category : '🔒 Sin descubrir'}</div>
+      </div>`;
+    if(isDisc){
+      div.addEventListener('click',()=> loadRecipeHint(r));
+      div.title = r.pattern.filter(Boolean).map(id=>MATERIALS[id]?.icon||'?').join('');
+    }
+    list.appendChild(div);
+  });
+}
+
+function updateRecipesList(){
+  document.querySelectorAll('.recipe-item').forEach((el,i)=>{
+    const r = RECIPES[i];
+    if(discovered.has(r.name)){
+      el.className = 'recipe-item discovered';
+      el.querySelector('.ri-name').textContent = r.result.name;
+      el.querySelector('.ri-mats').textContent = r.category;
+    }
+  });
+}
+
+function loadRecipeHint(recipe){
+  craftGrid = [...recipe.pattern];
+  buildCraftGrid();
+  showToast(`Receta cargada: ${recipe.result.name}`,'#aaaaff');
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, color='#55ff55'){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = color;
+  t.style.color = color;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+buildInventory();
+buildCraftGrid();
+buildRecipesList();
+showToast('⛏ ¡Selecciona materiales y craftea!','#55ff55');
+</script>
+</body>
+</html>
